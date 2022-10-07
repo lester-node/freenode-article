@@ -1,6 +1,5 @@
 import styles from "./index.less";
-import React, { useState } from "react";
-import { useMount } from "ahooks";
+import React, { useEffect, useRef, useState } from "react";
 import useRequest from "@ahooksjs/use-request";
 import api from "./service";
 import { message } from "antd";
@@ -15,29 +14,38 @@ import {
   TagOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
+import { history } from "umi";
 
 const Index = (props: any) => {
+  const viewRef = useRef<any>();
   const query = props.location.query;
-  const [articleData, setArticleData] = useState<any>({});
+  const [articleData, setArticleData] = useState({
+    title: "",
+    classifyName: "",
+    tagName: "",
+    updatedAt: "",
+    content: "",
+  });
 
-  useMount(() => {
+  useEffect(() => {
     if (query?.id) {
       articleSelectOneRun({ id: query?.id });
     }
-  });
+  }, [query.id]);
 
   const { run: articleSelectOneRun } = useRequest(
     (obj) => api.articleSelectOne(obj),
     {
       manual: true,
-      onSuccess: (res: any) => {
+      onSuccess: (res: { result: number; data: any; message: string }) => {
         if (res.result === 0) {
+          viewRef.current?.getInstance().setMarkdown(res.data.content);
           setArticleData(res.data);
         } else {
           message.error(res.message || "操作失败");
         }
       },
-      onError: (res: any) => {
+      onError: (res: { message: string }) => {
         message.error(res.message || "操作失败");
       },
     }
@@ -50,7 +58,7 @@ const Index = (props: any) => {
           <div
             className={styles.back}
             onClick={() => {
-              window.location.href = `${window.location.origin}/article`;
+              history.push("/article");
             }}
           >
             <HomeOutlined className={styles.icon} />
@@ -82,11 +90,9 @@ const Index = (props: any) => {
             </div>
           </div>
         </div>
-        {!_.isEmpty(articleData) ? (
-          <div className={styles.articleContent}>
-            <Viewer initialValue={articleData.content} />
-          </div>
-        ) : null}
+        <div className={styles.articleContent}>
+          <Viewer ref={viewRef} />
+        </div>
       </div>
     </div>
   );

@@ -1,57 +1,37 @@
-import {
-  AutoComplete,
-  ConfigProvider,
-  Input,
-  message,
-  Select,
-  Tree,
-} from "antd";
+import { ConfigProvider, message, Select } from "antd";
 import styles from "./index.less";
 import zhCN from "antd/es/locale/zh_CN";
 import React, { createContext, useEffect, useRef, useState } from "react";
 import useRequest from "@ahooksjs/use-request";
 import {
-  HomeOutlined,
-  FileTextOutlined,
-  UserSwitchOutlined,
-  RocketOutlined,
   ReadOutlined,
+  FileTextOutlined,
+  RocketOutlined,
   MenuOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import { history } from "umi";
 import { useMount, useSize, useThrottleFn } from "ahooks";
 import api from "./service";
-import { DirectoryTreeProps } from "antd/lib/tree";
 import _ from "lodash";
 
 export const LayoutContext = createContext({});
 
-export default (props: any) => {
+export default (props: { children: any }) => {
   const ref = useRef<any>();
   const selectRef = useRef<any>(null);
   const size: any = useSize(ref);
   const [active, setActive] = useState("首页");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [treeData, setTreeData] = useState<any>([]);
-  const [selectInfo, setSelectInfo] = useState<any>();
   const [selectData, setSelectData] = useState([]);
   const [showSearchFlag, setShowSearchFlag] = useState(false);
-  const [menu, setMenu] = useState([
-    {
-      name: "首页",
-      icon: <HomeOutlined />,
-      onClick: (name: string) => {
-        setActive(name);
-        window.location.href = `${window.location.origin}/`;
-      },
-    },
+  const menu = [
     {
       name: "教程",
       icon: <ReadOutlined />,
       onClick: (name: string) => {
         setActive(name);
-        window.location.href = `${window.location.origin}/course`;
+        history.push(`/test/course`);
       },
     },
     {
@@ -59,15 +39,7 @@ export default (props: any) => {
       icon: <FileTextOutlined />,
       onClick: (name: string) => {
         setActive(name);
-        window.location.href = `${window.location.origin}/article`;
-      },
-    },
-    {
-      name: "关于",
-      icon: <UserSwitchOutlined />,
-      onClick: (name: string) => {
-        setActive(name);
-        window.location.href = `${window.location.origin}/about`;
+        history.push(`/test/article`);
       },
     },
     {
@@ -77,32 +49,17 @@ export default (props: any) => {
         window.open("https://www.freenode.cn:3000");
       },
     },
-  ]);
+  ];
 
   const store = {
     size,
-    selectInfo,
   };
 
-  const { run: courseTreeRun } = useRequest(() => api.courseTree({}), {
-    manual: false,
-    onSuccess: (res: any) => {
-      if (res.result === 0) {
-        setTreeData(res.data);
-      } else {
-        message.error(res.message || "操作失败");
-      }
-    },
-    onError: (res: any) => {
-      message.error(res.message || "操作失败");
-    },
-  });
-
-  const { run: articleAndCourseListRun } = useRequest(
-    (title) => api.articleAndCourseList({ title }),
+  const { run: articleListRun } = useRequest(
+    (title) => api.articleList({ title }),
     {
       manual: false,
-      onSuccess: (res: any) => {
+      onSuccess: (res: { result: number; data: any; message: string }) => {
         if (res.result === 0) {
           setSelectData(res.data);
         } else {
@@ -114,13 +71,6 @@ export default (props: any) => {
       },
     }
   );
-
-  const onSelect: DirectoryTreeProps["onSelect"] = (keys, info) => {
-    setSelectInfo(info);
-    if (info.node.isLeaf) {
-      setMenuOpen(false);
-    }
-  };
 
   const { run } = useThrottleFn(
     (flag) => {
@@ -145,30 +95,16 @@ export default (props: any) => {
     if (pathname.includes("course")) {
       setActive("教程");
     }
-    if (pathname.includes("about")) {
-      setActive("关于");
-    }
   });
 
-  const handleSearch = (newValue: string) => {
-    if (newValue) {
-      articleAndCourseListRun(newValue);
-    } else {
-      setSelectData([]);
+  const handleSelect = (obj: { label: string; value: string }) => {
+    const type = obj.label.split("-")[0];
+    if (type === "文章") {
+      history.push(`/articleDetail?id=${obj.value}`);
     }
   };
 
-  const handleSelect = (obj: { label: string; value: any; }) => {
-    let type = obj.label.split("-")[0];
-    if (type == '文章'){
-      window.location.href = `${window.location.origin}/articleDetail?id=${obj.value}`;
-    }else if(type == '教程'){
-      window.location.href = `${window.location.origin}/course?id=${obj.value}`;
-    }
-  };
-
-
-  const clickCallback = (event: { target: any; }) => {
+  const clickCallback = (event: { target: any }) => {
     if (selectRef?.current?.contains(event.target)) {
       return;
     }
@@ -195,15 +131,8 @@ export default (props: any) => {
         >
           <MenuOutlined />
         </div>
-        <div
-          className={styles.title}
-          onClick={() => {
-            setActive("首页");
-            history.push("/");
-          }}
-        >
-          <img src="./favicon.ico" />
-          <div>拾柒的博客</div>
+        <div className={styles.title}>
+          <div>测试环境</div>
         </div>
         {showSearchFlag ? (
           <div className={styles.small} ref={selectRef}>
@@ -213,24 +142,26 @@ export default (props: any) => {
               className={styles.smallSearch}
               placeholder="输入关键词"
               showArrow={true}
-              onSearch={_.debounce((val) => {
-                handleSearch(val);
-              }, 200)}
+              optionFilterProp="children"
+              allowClear={true}
               labelInValue={true}
               onSelect={handleSelect}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
               {Array.isArray(selectData) &&
-                selectData.map((item: any) => {
-                  return (
-                    <Select.Option
-                      key={item.id}
-                      value={item.id}
-                      label={`${item.name}-${item.title}`}
-                    >
-                      {`${item.name}-${item.title}`}
-                    </Select.Option>
-                  );
-                })}
+                selectData.map(
+                  (item: { id: string; title: string; name: string }) => {
+                    return (
+                      <Select.Option
+                        key={item.id}
+                        value={item.id}
+                        label={`${item.name}-${item.title}`}
+                      >
+                        {`${item.name}-${item.title}`}
+                      </Select.Option>
+                    );
+                  }
+                )}
             </Select>
           </div>
         ) : null}
@@ -242,24 +173,26 @@ export default (props: any) => {
               className={styles.search}
               placeholder="输入关键词"
               showArrow={true}
-              onSearch={_.debounce((val) => {
-                handleSearch(val);
-              }, 200)}
+              optionFilterProp="children"
               labelInValue={true}
+              allowClear={true}
               onSelect={handleSelect}
+              getPopupContainer={(triggerNode) => triggerNode.parentNode}
             >
               {Array.isArray(selectData) &&
-                selectData.map((item: any) => {
-                  return (
-                    <Select.Option
-                      key={item.id}
-                      value={item.id}
-                      label={`${item.name}-${item.title}`}
-                    >
-                      {`${item.name}-${item.title}`}
-                    </Select.Option>
-                  );
-                })}
+                selectData.map(
+                  (item: { id: string; title: string; name: string }) => {
+                    return (
+                      <Select.Option
+                        key={item.id}
+                        value={item.id}
+                        label={`${item.name}-${item.title}`}
+                      >
+                        {`${item.name}-${item.title}`}
+                      </Select.Option>
+                    );
+                  }
+                )}
             </Select>
           ) : (
             <div
@@ -277,7 +210,7 @@ export default (props: any) => {
             style={{ display: menuOpen ? "flex" : "none" }}
           >
             <div className={styles.navTop}>
-              {menu.map((item: any, index) => {
+              {menu.map((item, index) => {
                 return (
                   <div
                     className={`${styles.nav} ${
@@ -297,19 +230,6 @@ export default (props: any) => {
                 );
               })}
             </div>
-            {window.location.pathname.includes("course") &&
-            size?.width < 768 ? (
-              <div className={styles.navBottom}>
-                {treeData.length ? (
-                  <Tree.DirectoryTree
-                    treeData={treeData}
-                    onSelect={onSelect}
-                    defaultExpandedKeys={[treeData?.[0]?.key]}
-                    defaultSelectedKeys={[treeData?.[0]?.children?.[0]?.key]}
-                  />
-                ) : null}
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
@@ -326,26 +246,6 @@ export default (props: any) => {
             {props.children}
           </LayoutContext.Provider>
         </ConfigProvider>
-      </div>
-      <div
-        className={styles.footer}
-        onClick={() => {
-          if (size?.width < 768) {
-            setMenuOpen(false);
-          }
-        }}
-      >
-        <div>Copyright © 2022 freenode.cn</div>
-        <a
-          className={styles.jumpMiit}
-          onClick={() => {
-            window.location.href =
-              "https://beian.miit.gov.cn/#/Integrated/index";
-          }}
-        >
-          浙ICP备20011916号-1
-        </a>
-        <div>创作不易，本站所有内容转载须注明署名和出处。</div>
       </div>
     </div>
   );

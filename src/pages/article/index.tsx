@@ -9,8 +9,16 @@ import SingleArticle from "./components/singleArticle";
 const Index = () => {
   const [pageData, setPageData] = useState(config.PAGEDATA);
   const [tableParams, setTableParams] = useState(config.TABLEPARAMS);
-  const [classifyData, setClassifyData] = useState<any>([]);
-  const [tagData, setTagData] = useState<any>([]);
+  const [selectData, setSelectData] = useState({
+    tag: "全部",
+    classify: "全部",
+  });
+  const [classifyData, setClassifyData] = useState([
+    { id: "", name: "", articleTotal: 0 },
+  ]);
+  const [tagData, setTagData] = useState([
+    { id: "", name: "", articleTotal: 0 },
+  ]);
 
   useEffect(() => {
     articlePageRun(tableParams);
@@ -18,7 +26,11 @@ const Index = () => {
 
   const { run: articlePageRun } = useRequest((obj) => api.articlePage(obj), {
     manual: true,
-    onSuccess: (res: any) => {
+    onSuccess: (res: {
+      result: number;
+      data: { rows: any; total: number };
+      message: string;
+    }) => {
       if (res.result === 0) {
         setPageData({
           dataList: res.data.rows,
@@ -28,35 +40,35 @@ const Index = () => {
         message.error(res.message || "操作失败");
       }
     },
-    onError: (res: any) => {
+    onError: (res: { message: string }) => {
       message.error(res.message || "操作失败");
     },
   });
 
   const { run: classifyEnumRun } = useRequest(() => api.classifyList({}), {
     manual: false,
-    onSuccess: (res: any) => {
+    onSuccess: (res: { result: number; data: any; message: string }) => {
       if (res.result === 0) {
         setClassifyData([{ id: "", name: "全部" }, ...res.data]);
       } else {
         message.error(res.message || "操作失败");
       }
     },
-    onError: (res: any) => {
+    onError: (res: { message: string }) => {
       message.error(res.message || "操作失败");
     },
   });
 
   const { run: tagPageRun } = useRequest(() => api.tagList({}), {
     manual: false,
-    onSuccess: (res: any) => {
+    onSuccess: (res: { result: number; data: any; message: string }) => {
       if (res.result === 0) {
         setTagData([{ id: "", name: "全部" }, ...res.data]);
       } else {
         message.error(res.message || "操作失败");
       }
     },
-    onError: (res: any) => {
+    onError: (res: { message: string }) => {
       message.error(res.message || "操作失败");
     },
   });
@@ -68,12 +80,17 @@ const Index = () => {
           <div className={styles.block}>
             <div className={styles.title}>分类</div>
             <div className={styles.bigBlock}>
-              {classifyData.map((item: any, index: number) => {
+              {classifyData.map((item, index) => {
                 return (
                   <div
                     key={index}
-                    className={styles.smallBlock}
+                    className={`${styles.smallBlock} ${
+                      item.name === selectData.classify
+                        ? styles.activeBlock
+                        : ""
+                    }`}
                     onClick={() => {
+                      setSelectData({ ...selectData, classify: item.name });
                       setTableParams({
                         page: 1,
                         rows: 10,
@@ -93,12 +110,15 @@ const Index = () => {
           <div className={styles.block}>
             <div className={styles.title}>标签</div>
             <div className={styles.bigBlock}>
-              {tagData.map((item: any, index: number) => {
+              {tagData.map((item, index) => {
                 return (
                   <div
                     key={index}
-                    className={styles.smallBlock}
+                    className={`${styles.smallBlock} ${
+                      item.name === selectData.tag ? styles.activeBlock : ""
+                    }`}
                     onClick={() => {
+                      setSelectData({ ...selectData, tag: item.name });
                       setTableParams({
                         page: 1,
                         rows: 10,
@@ -118,7 +138,7 @@ const Index = () => {
         </div>
         <div className={styles.right}>
           <div className={styles.rightTop}>
-            {pageData.dataList.map((item: any, index) => (
+            {pageData.dataList.map((item, index) => (
               <SingleArticle data={item} key={index} />
             ))}
           </div>

@@ -12,7 +12,7 @@ import "@toast-ui/editor/dist/i18n/zh-cn";
 import "../../../../style/toastui-editor-viewer.css";
 import { Button } from "antd";
 
-const Index = (props: any) => {
+const Index = (props: { data: any }) => {
   const viewRef = useRef<any>();
   const { data } = props;
 
