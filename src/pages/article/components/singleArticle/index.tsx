@@ -23,7 +23,7 @@ const Index = (props: { data: any }) => {
   }, []);
 
   const goArticleDetail = () => {
-    history.push(`/articleDetail?id=${data.id}`);
+    history.push(`/test/articleDetail?id=${data.id}`);
   };
 
   return (

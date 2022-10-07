@@ -58,7 +58,7 @@ const Index = (props: any) => {
           <div
             className={styles.back}
             onClick={() => {
-              history.push("/article");
+              history.push("/test/article");
             }}
           >
             <HomeOutlined className={styles.icon} />

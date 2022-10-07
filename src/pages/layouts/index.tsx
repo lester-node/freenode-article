@@ -100,7 +100,7 @@ export default (props: { children: any }) => {
   const handleSelect = (obj: { label: string; value: string }) => {
     const type = obj.label.split("-")[0];
     if (type === "文章") {
-      history.push(`/articleDetail?id=${obj.value}`);
+      history.push(`/test/articleDetail?id=${obj.value}`);
     }
   };
 
